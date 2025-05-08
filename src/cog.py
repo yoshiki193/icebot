@@ -26,7 +26,7 @@ class command(commands.Cog):
             if str(message.channel.id) in [i for i in data['announcement']]:
                 last_message = await message.channel.fetch_message(data['announcement'][str(message.channel.id)]['messageId'])
                 await last_message.delete()
-                send_message = await message.channel.send(content=data['announcement'][str(message.channel.id)]['value'])
+                send_message = await message.channel.send(content=data['announcement'][str(message.channel.id)]['value'],silent=True)
                 data['announcement'][str(message.channel.id)]['messageId'] = send_message.id
                 with open('data.json', 'w') as f:
                     json.dump(data, f, indent = 2)
