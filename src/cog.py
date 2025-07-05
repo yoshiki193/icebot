@@ -4,7 +4,8 @@ from discord.ext import commands
 import json
 import logging
 from vv import main
-import os
+import io
+import subprocess
 
 logging.basicConfig(
     level = logging.INFO,
@@ -36,11 +37,33 @@ class command(commands.Cog):
                     json.dump(data, f, indent = 2)
 
             if message.channel.id in [i for i in data["activeVV"]]:
-                text_hash = await main(message.content, self.style)
-                self.vc.play(discord.FFmpegPCMAudio(text_hash))
+                wav = await main(message.content, self.style)
+                buffer = io.BytesIO(wav)
+                buffer.seek(0)
+                ffmpeg_process = subprocess.Popen(
+                    [
+                        "ffmpeg",
+                        "-i", "pipe:0",
+                        "-f", "s16le",
+                        "-ar", "48000",
+                        "-ac", "2",
+                        "pipe:1",
+                    ],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
+
+                ffmpeg_process.stdin.write(buffer.read())
+                ffmpeg_process.stdin.close()
+                audio_source = discord.PCMAudio(ffmpeg_process.stdout)
+                self.vc.play(audio_source)
+
                 while self.vc.is_playing():
-                    await asyncio.sleep(1)
-                os.remove(text_hash)
+                    await asyncio.sleep(0.5)
+
+                ffmpeg_process.stdout.close()
+                ffmpeg_process.wait()
     
     @discord.app_commands.command(
         description = "announcement"
