@@ -7,3 +7,4 @@ services:
       - token=${API_TOKEN}
     volumes:
       - ./src:/root/opt
+    restart: always
